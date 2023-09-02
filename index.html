@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>CodePen - Particle cellular automata loops</title>
+  
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      canvas {
+        border: 1px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="particleCanvas"></canvas>
+    <script>
+      const canvas = document.getElementById("particleCanvas");
+      const ctx = canvas.getContext("2d");
+
+      // Set canvas dimensions
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      // Grid settings
+      const gridSize = 9;
+
+      // Particle class
+      class Particle {
+        constructor(x, y, radius, color, velocity) {
+          this.x = x;
+          this.y = y;
+          this.radius = radius;
+          this.color = color;
+          this.velocity = velocity;
+        }
+
+        draw() {
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+          ctx.fillStyle = this.color;
+          ctx.fill();
+        }
+
+        update(grid) {
+          this.draw();
+          this.x += this.velocity.x;
+          this.y += this.velocity.y;
+
+          // Wrap around when hitting canvas edges
+          if (this.x - this.radius > canvas.width) {
+            this.x = -this.radius;
+          } else if (this.x + this.radius < 0) {
+            this.x = canvas.width + this.radius;
+          }
+
+          if (this.y - this.radius > canvas.height) {
+            this.y = -this.radius;
+          } else if (this.y + this.radius < 0) {
+            this.y = canvas.height + this.radius;
+          }
+
+          // Determine the grid cell the particle is in
+          const gridX = Math.floor(this.x / gridSize);
+          const gridY = Math.floor(this.y / gridSize);
+
+          // Check if the cell is already filled with the same color as the particle
+          if (gridX >= 0 && gridY >= 0 && gridX < grid.length && gridY < grid[0].length) {
+            const cellColor = grid[gridX][gridY];
+            if (cellColor && cellColor === this.color) {
+              // Rotate particle's direction by 45 degrees (excluding the current cell)
+              this.velocity = rotateVector(this.velocity, Math.PI / 4);
+
+              // Change the cell's color to the opposite color (excluding the cell the particle just left)
+              for (let dx = -1; dx <= 1; dx++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                  const newX = gridX + dx;
+                  const newY = gridY + dy;
+                  if (dx !== 0 || dy !== 0) {
+                    if (
+                      newX >= 0 &&
+                      newY >= 0 &&
+                      newX < grid.length &&
+                      newY < grid[0].length &&
+                      (dx !== 0 || dy !== 0)
+                    ) {
+                      grid[newX][newY] = this.color === "green" ? "yellow" : "green";
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          // Fill the grid cell with the particle's color
+          grid[gridX][gridY] = this.color;
+        }
+      }
+
+      // Particle array
+      const particles = [];
+
+      // Grid dimensions
+      const numCols = Math.ceil(canvas.width / gridSize);
+      const numRows = Math.ceil(canvas.height / gridSize);
+
+      // Initialize the grid with all cells set to null (no color)
+      const grid = new Array(numCols).fill(null).map(() => new Array(numRows).fill(null));
+
+      // Create particles with two colors (green and yellow) and fixed radius and velocity
+      for (let i = 0; i < 65; i++) {
+        const x = (Math.floor(Math.random() * numCols) + 0.5) * gridSize;
+        const y = (Math.floor(Math.random() * numRows) + 0.5) * gridSize;
+        const radius = 5; // Fixed radius
+        const color = Math.random() < 0.5 ? "green" : "yellow"; // Randomly choose between green and yellow
+        const angle = (Math.PI * 2) * Math.random();
+        const speed = 5; // Fixed speed
+        const velocity = {
+          x: Math.cos(angle) * speed,
+          y: Math.sin(angle) * speed
+        };
+
+        particles.push(new Particle(x, y, radius, color, velocity));
+      }
+
+      // Function to rotate a vector by a given angle
+      function rotateVector(vector, angle) {
+        const x = vector.x;
+        const y = vector.y;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        return {
+          x: x * cos - y * sin,
+          y: x * sin + y * cos
+        };
+      }
+
+      // Animation loop
+      function animate() {
+        requestAnimationFrame(animate);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw grid and fill cells with colors
+        for (let x = 0; x < canvas.width; x += gridSize) {
+          for (let y = 0; y < canvas.height; y += gridSize) {
+            const gridX = Math.floor(x / gridSize);
+            const gridY = Math.floor(y / gridSize);
+            const cellColor = grid[gridX][gridY];
+
+            if (cellColor) {
+              ctx.fillStyle = cellColor;
+              ctx.fillRect(x, y, gridSize, gridSize);
+            }
+
+            ctx.beginPath();
+            ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
+            ctx.lineWidth = 1;
+            ctx.rect(x, y, gridSize, gridSize);
+            ctx.stroke();
+          }
+        }
+
+        particles.forEach((particle, index) => {
+          particle.update(grid);
+        });
+      }
+
+      animate();
+    </script>
+  </body>
+</html>
+<!-- partial -->
+  
+</body>
+</html>
